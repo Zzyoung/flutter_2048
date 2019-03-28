@@ -28,23 +28,23 @@ class Square extends StatefulWidget {
   }
 }
 
-class SquareState extends State<Square> with SingleTickerProviderStateMixin {
+class SquareState extends State<Square> with TickerProviderStateMixin {
   Animation<double> scale;
   Animation<double> combineScale;
   AnimationController combineController;
   AnimationController controller;
   Tween<double> squareTween;
+  Tween<double> combineTween;
 
-
-  SquareState() {
-    
-  }
+  SquareState() {}
 
   @override
   void initState() {
     super.initState();
-    controller =
-        AnimationController(duration: const Duration(milliseconds: 150), vsync: this);
+    controller = AnimationController(
+        duration: const Duration(milliseconds: 150), vsync: this);
+    combineController = AnimationController(
+        duration: const Duration(milliseconds: 40), vsync: this);
     if (widget.isNew) {
       squareTween = Tween<double>(begin: 0, end: 1);
     } else {
@@ -52,33 +52,48 @@ class SquareState extends State<Square> with SingleTickerProviderStateMixin {
     }
     // #docregion addListener
     scale = squareTween.animate(controller)
-            ..addListener(() {
-                // #enddocregion addListener
-                setState(() {
-                  // The state that has changed here is the animation object’s value.
-                });
-                // #docregion addListener
-              });
+      ..addListener(() {
+        // #enddocregion addListener
+        setState(() {
+          // The state that has changed here is the animation object’s value.
+        });
+        // #docregion addListener
+      });
+    combineTween =Tween<double>(begin: 1, end: 1.3);
+    combineScale =combineTween.animate(combineController)
+          ..addListener(() {
+            setState((){});
+          });
     controller.forward();
   }
 
   @override
   void didUpdateWidget(Square oldWidget) {
     super.didUpdateWidget(oldWidget);
-    print('needCombine:'+ widget.needCombine.toString());
+    // print('number:' + widget.number.toString() + ';needCombine:' + widget.needCombine.toString()+ ';isNew:' + widget.isNew.toString());
+    combineController.reset();
     if (widget.isNew) {
       squareTween.begin = 0;
       squareTween.end = 1;
       controller.reset();
       controller.forward();
     } else if (widget.needCombine) {
-
+      combineController.forward().whenComplete((){
+        combineController.reverse();
+      });
     }
   }
 
   @override
+  void dispose() {
+    controller.dispose();
+    combineController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var number =widget.number;
+    var number = widget.number;
     var fontSize = 36.0;
     if (number >= 128 && number < 1024) {
       fontSize = 28.0;
@@ -86,25 +101,26 @@ class SquareState extends State<Square> with SingleTickerProviderStateMixin {
       fontSize = 18.0;
     }
     return Center(
+        child: Transform.scale(
+      scale: scale.value,
       child: Transform.scale(
-        scale: scale.value,
-        child: Container(
-        width: 70,
-        height: 70,
-        decoration: BoxDecoration(
-            color: Color(colorMapping[number.toString()][1]),
-            borderRadius: BorderRadius.circular(3.0)),
-        child: new Align(
-            alignment: FractionalOffset.center,
-            child: new Text(
-              number.toString(),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  color: Color(colorMapping[number.toString()][0]),
-                  fontSize: fontSize,
-                  fontWeight: FontWeight.bold),
-            ))),
-      )
-    );
+          scale: combineScale.value,
+          child: Container(
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                  color: Color(colorMapping[number.toString()][1]),
+                  borderRadius: BorderRadius.circular(3.0)),
+              child: new Align(
+                  alignment: FractionalOffset.center,
+                  child: new Text(
+                    number.toString(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: Color(colorMapping[number.toString()][0]),
+                        fontSize: fontSize,
+                        fontWeight: FontWeight.bold),
+                  )))),
+    ));
   }
 }
